@@ -1,14 +1,15 @@
 //! Read Aloud: the document as a queue of sentences that the system's speech program speaks one
 //! at a time, so reading can be paused, skipped forwards and backwards, and sped up.
 //!
-//! Citation-manager fields can be left out: Zotero, Mendeley and EndNote citations and
+//! Citation-manager fields can be left out: CSL, Mendeley and EndNote citations and
 //! bibliographies (range fields with an `ADDIN …` code) and Word's own `CITATION` and
 //! `BIBLIOGRAPHY` fields. The citation's text simply isn't in the queue, so every citation
 //! style is skipped the same way: "(Smith et al., 2020)", "[3]" or a superscript number.
 //!
-//! The speech itself runs on a worker thread (desktop only): it starts `say` (macOS), `espeak`
-//! / `spd-say` (Linux, BSD) or the Windows speech synthesizer (PowerShell) for the current
-//! sentence, and moves on when it finishes. Commands only change the shared state and wake the
+//! The speech itself runs on a worker thread (desktop only): it starts `say` (macOS), `espeak-ng`
+//! / `espeak` / `spd-say` (Linux, BSD) or the Windows speech synthesizer (PowerShell) for the
+//! current sentence, and moves on when it finishes. Each sentence is spoken with a voice of its
+//! language ([`voice_lang`]): Russian text with a Russian voice, other text with an English one. Commands only change the shared state and wake the
 //! worker, which stops the running sentence when the state changed under it.
 
 use std::sync::{Arc, Condvar, Mutex, MutexGuard, PoisonError};
@@ -35,7 +36,7 @@ const ABBREVIATIONS: &[&str] = &[
     "est", "min", "max", "viz", "ibid",
 ];
 
-/// Is this field code a citation or a bibliography (Zotero, Mendeley, EndNote, Word)?
+/// Is this field code a citation or a bibliography (CSL, Mendeley, EndNote, Word)?
 pub fn is_citation_code(instr: &str) -> bool {
     let code = instr.trim_start();
     let word = code.split_whitespace().next().unwrap_or("").to_ascii_uppercase();
@@ -505,27 +506,54 @@ fn windows_powershell(system_root: Option<std::ffi::OsString>) -> std::path::Pat
     std::path::Path::new(&root).join("System32").join("WindowsPowerShell").join("v1.0").join("powershell.exe")
 }
 
+/// The voice language for a sentence: `ru` when most of its letters are Cyrillic, else `en`.
+pub fn voice_lang(text: &str) -> &'static str {
+    let (mut cyrillic, mut other) = (0usize, 0usize);
+    for c in text.chars().filter(|c| c.is_alphabetic()) {
+        if ('\u{0400}'..='\u{052F}').contains(&c) {
+            cyrillic += 1;
+        } else {
+            other += 1;
+        }
+    }
+    if cyrillic > other { "ru" } else { "en" }
+}
+
+/// The PowerShell script that speaks stdin (read as UTF-8) at SAPI rate `rate` with an installed
+/// voice of language `lang` when there is one.
+#[cfg(any(target_os = "windows", test))]
+fn windows_script(rate: i64, lang: &str) -> String {
+    format!(
+        "[Console]::InputEncoding = [System.Text.Encoding]::UTF8; Add-Type -AssemblyName System.Speech; \
+         $s = New-Object System.Speech.Synthesis.SpeechSynthesizer; $s.Rate = {rate}; \
+         $v = $s.GetInstalledVoices() | Where-Object {{ $_.Enabled -and $_.VoiceInfo.Culture.TwoLetterISOLanguageName -eq '{lang}' }} | Select-Object -First 1; \
+         if ($v) {{ $s.SelectVoice($v.VoiceInfo.Name) }}; $s.Speak([Console]::In.ReadToEnd())"
+    )
+}
+
 /// Speak one sentence with the system's speech program, stopping early when `changed()`.
 #[cfg(not(target_arch = "wasm32"))]
 fn speak(text: &str, rate: f32, changed: &dyn Fn() -> bool) -> Spoken {
     use std::io::Write;
     use std::process::{Command, Stdio};
     let wpm = ((BASE_WPM * rate).round() as i64).to_string();
+    let lang = voice_lang(text);
     // The text goes in on stdin so it can never be taken for an option.
     let mut tries: Vec<Command> = Vec::new();
     #[cfg(target_os = "macos")]
     {
         let mut c = Command::new("say");
         c.args(["-r", &wpm]);
+        if lang == "ru" {
+            c.args(["-v", "Milena"]);
+        }
         tries.push(c);
     }
     #[cfg(target_os = "windows")]
     {
         // SAPI rate: -10 (a third of normal speed) … 10 (three times).
         let r = ((rate.ln() / 3f32.ln()) * 10.0).round().clamp(-10.0, 10.0) as i64;
-        let script = format!(
-            "Add-Type -AssemblyName System.Speech; $s = New-Object System.Speech.Synthesis.SpeechSynthesizer; $s.Rate = {r}; $s.Speak([Console]::In.ReadToEnd())"
-        );
+        let script = windows_script(r, lang);
         let mut c = Command::new(windows_powershell(std::env::var_os("SystemRoot")));
         c.args(["-NoProfile", "-NonInteractive", "-Command", &script]);
         tries.push(c);
@@ -534,11 +562,16 @@ fn speak(text: &str, rate: f32, changed: &dyn Fn() -> bool) -> Spoken {
     {
         for prog in ["espeak-ng", "espeak"] {
             let mut c = Command::new(prog);
-            c.args(["-s", &wpm, "--stdin"]);
+            c.args(["-v", lang, "-s", &wpm, "--stdin"]);
             tries.push(c);
         }
+        // Speech Dispatcher: rate -100 … 100 around its normal speed.
+        let r = (((rate - 1.0) * 100.0).round() as i64).clamp(-100, 100).to_string();
+        let mut c = Command::new("spd-say");
+        c.args(["-w", "-e", "-l", lang, "-r", &r]);
+        tries.push(c);
     }
-    let _ = &wpm;
+    let _ = (&wpm, lang);
     let mut child = None;
     let mut last_err = String::from("no speech program on this system");
     for mut c in tries {
@@ -578,6 +611,17 @@ mod tests {
 
     fn texts(v: &[Utterance]) -> Vec<&str> {
         v.iter().map(|u| u.text.as_str()).collect()
+    }
+
+    #[test]
+    fn russian_sentences_get_a_russian_voice() {
+        assert_eq!(voice_lang("Привет, как дела?"), "ru");
+        assert_eq!(voice_lang("Версия 0.0.1 программы Litera"), "ru");
+        assert_eq!(voice_lang("Hello, world."), "en");
+        assert_eq!(voice_lang("12345"), "en");
+        let script = windows_script(0, "ru");
+        assert!(script.starts_with("[Console]::InputEncoding = [System.Text.Encoding]::UTF8;"), "{script}");
+        assert!(script.contains("TwoLetterISOLanguageName -eq 'ru'"), "{script}");
     }
 
     #[test]

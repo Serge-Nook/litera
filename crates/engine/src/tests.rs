@@ -3162,6 +3162,22 @@ fn para_tabs_set_clear_and_undo() {
     assert!(s.run("para.tabs", &json!({"clear": "x"})).is_err());
 }
 
+/// Dragging a tab marker on the ruler: clear the old stop and set the moved one in one command,
+/// which is one undo step and keeps the stop's alignment and leader.
+#[test]
+fn para_tabs_move_is_one_step() {
+    use wordcraft_doc::props::{TabAlign, TabLeader};
+    let mut s = s();
+    run(&mut s, "text.insert", json!({"text": "a\tb"}));
+    run(&mut s, "para.tabs", json!({"set": [{"pos": 72.0, "align": "center", "leader": "dot"}]}));
+    run(&mut s, "para.tabs", json!({"clear": [72.0], "set": [{"pos": 108.0, "align": "center", "leader": "dot"}]}));
+    let tabs = s.doc.para_at(&s.sel.focus).and_then(|p| p.props.tabs.clone()).unwrap_or_default();
+    assert_eq!(tabs.iter().map(|t| (t.pos, t.align, t.leader)).collect::<Vec<_>>(), vec![(108.0, TabAlign::Center, TabLeader::Dot)]);
+    run(&mut s, "edit.undo", json!({}));
+    let tabs = s.doc.para_at(&s.sel.focus).and_then(|p| p.props.tabs.clone()).unwrap_or_default();
+    assert_eq!(tabs.iter().map(|t| t.pos).collect::<Vec<_>>(), vec![72.0]);
+}
+
 /// #320: changing only the default tab interval (a document setting) is its own undo step,
 /// and redo puts it back.
 #[test]

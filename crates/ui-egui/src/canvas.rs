@@ -1932,6 +1932,18 @@ fn rulers(app: &mut WordApp, ui: &mut Ui, h: Rect, v: Rect, rects: &[Rect], layo
             }
         }
     }
+    // Double-clicking the ruler's text area sets a left tab stop there for the caret's
+    // paragraph. Registered first, so the margin edges and the markers keep their own clicks.
+    let add = ui.interact(text, ui.id().with("ruler_add_tab"), Sense::click());
+    if add.double_clicked()
+        && rp.is_some()
+        && let Some(pp) = add.interact_pointer_pos()
+    {
+        let pos = snap_tab(s_at(pp.x) - origin);
+        if pos > 0.0 && pos <= page.body.w {
+            let _ = app.run("para.tabs", json!({"set": [{"pos": pos}]}));
+        }
+    }
     // Margins: the edges of the white text area drag the section's margins. Registered before
     // the indent markers, so a marker sitting on an edge keeps the pointer where they overlap.
     let (le, re) = (x0 + page.body.x * scale, x0 + page.body.right() * scale);
@@ -1976,16 +1988,40 @@ fn rulers(app: &mut WordApp, ui: &mut Ui, h: Rect, v: Rect, rects: &[Rect], layo
             Stroke::new(1.0, c),
         ));
         let mut open_tabs = false;
+        let mut moved: Option<serde_json::Value> = None;
         for (i, tab) in rp.tabs.iter().enumerate() {
-            let tx = px(tab.pos);
+            // A marker is dragged along the ruler to move its stop, or off it (downwards) to
+            // clear it; the change is made once, when the button is released.
+            let zone = Rect::from_center_size(pos2(px(tab.pos), bar.max.y - 4.0), vec2(8.0, 9.0));
+            let r = ui.interact(zone, ui.id().with(("ruler_tab", i)), Sense::click_and_drag());
+            // Double-clicking a tab marker opens the Tabs dialog (#320).
+            open_tabs |= r.double_clicked();
+            let drag_to = (r.dragged() || r.drag_stopped()).then(|| r.interact_pointer_pos().or_else(|| ui.ctx().pointer_latest_pos())).flatten();
+            let off_ruler = drag_to.is_some_and(|p| p.y > h.max.y + TAB_CLEAR_DRAG);
+            let pos = match drag_to {
+                Some(p) if !off_ruler => snap_tab(dist_at(p.x)).clamp(0.0, w),
+                _ => tab.pos,
+            };
+            if r.drag_stopped() && drag_to.is_some() && (off_ruler || (pos - tab.pos).abs() >= 0.5) {
+                moved = Some(if off_ruler {
+                    json!({"clear": [tab.pos]})
+                } else {
+                    let mut stop = json!(tab);
+                    stop["pos"] = json!(pos);
+                    json!({"clear": [tab.pos], "set": [stop]})
+                });
+            }
+            if off_ruler {
+                continue;
+            }
+            let tx = px(pos);
             let foot = if rtl { -4.0 } else { 4.0 };
             hp.line_segment([pos2(tx, bar.max.y - 6.0), pos2(tx, bar.max.y - 1.0)], Stroke::new(1.5, t.text));
             hp.line_segment([pos2(tx, bar.max.y - 1.0), pos2(tx + foot, bar.max.y - 1.0)], Stroke::new(1.5, t.text));
-            // Double-clicking a tab marker opens the Tabs dialog (#320).
-            let zone = Rect::from_center_size(pos2(tx, bar.max.y - 4.0), vec2(8.0, 9.0));
-            open_tabs |= ui.interact(zone, ui.id().with(("ruler_tab", i)), Sense::click()).double_clicked();
         }
-        if open_tabs {
+        if let Some(params) = moved {
+            let _ = app.run("para.tabs", params);
+        } else if open_tabs {
             let _ = app.run("para.tabs", json!({}));
         }
         // Dragging the left-indent marker.
@@ -2060,6 +2096,14 @@ fn rulers(app: &mut WordApp, ui: &mut Ui, h: Rect, v: Rect, rects: &[Rect], layo
             break;
         }
     }
+}
+
+/// How far below the ruler a dragged tab marker clears its stop (screen points).
+const TAB_CLEAR_DRAG: f32 = 16.0;
+
+/// A tab position set from the ruler, snapped to 1/16 inch (points).
+fn snap_tab(pt: f32) -> f32 {
+    (pt / 4.5).round() * 4.5
 }
 
 /// One mark drawn along a horizontal ruler.

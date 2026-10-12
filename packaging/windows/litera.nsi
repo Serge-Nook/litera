@@ -1,5 +1,5 @@
 ; Литера installer for Windows 10/11 (NSIS 3, Unicode). Built by package-nsis.sh:
-;   makensis -DVERSION=0.0.1 -DBINDIR=<dir with litera.exe> -DICON=<.ico> -DOUTFILE=<setup.exe> litera.nsi
+;   makensis -DVERSION=0.0.2 -DBINDIR=<dir with litera.exe> -DICON=<.ico> -DOUTFILE=<setup.exe> litera.nsi
 Unicode true
 ManifestDPIAware true
 RequestExecutionLevel admin

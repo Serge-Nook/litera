@@ -165,7 +165,7 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
                     ui.label(egui::RichText::new(msg).color(t.text_dim));
                 }
                 Err(e) => {
-                    ui.label(egui::RichText::new(e.to_string()).color(t.red));
+                    ui.label(egui::RichText::new(print_error(&e)).color(t.red));
                 }
             }
             ui.add_space(8.0);
@@ -234,5 +234,68 @@ pub fn export_formats(app: &mut WordApp, ui: &mut Ui) {
             app.export_dialog(ext);
         }
         ui.add_space(4.0);
+    }
+}
+
+/// A print settings error in the interface language (the engine words them in English).
+fn print_error(e: &wordcraft_engine::CmdError) -> String {
+    match e {
+        wordcraft_engine::CmdError::Params(m) => print_params_error(m),
+        other => other.to_string(),
+    }
+}
+
+fn print_params_error(m: &str) -> String {
+    use crate::i18n::fmt;
+    match m {
+        "the page range is too long" => return tl!("The page range is too long").to_string(),
+        "the document has no pages" => return tl!("The document has no pages").to_string(),
+        "type the pages to print, like 1-3, 5" => return tl!("Type the pages to print, like 1-3, 5").to_string(),
+        "no pages to print with these settings" => return tl!("No pages to print with these settings").to_string(),
+        _ => {}
+    }
+    if let Some((n, total)) = m.strip_prefix("page ").and_then(|r| r.split_once(" doesn't exist; the document has ")) {
+        let total = total.trim_end_matches(" pages").trim_end_matches(" page");
+        let template = if total == "1" {
+            tl!("Page {n} doesn't exist: the document has 1 page")
+        } else {
+            tl!("Page {n} doesn't exist: the document has {total} pages")
+        };
+        return fmt(template, &[("n", n), ("total", total)]);
+    }
+    if let Some(rest) = m.strip_prefix('`') {
+        if let Some((item, "")) = rest.split_once("` isn't a page or a range like 2-4") {
+            return fmt(tl!("“{item}” isn't a page or a range like 2-4"), &[("item", item)]);
+        }
+        if let Some((item, "")) = rest.split_once("` runs backwards") {
+            return fmt(tl!("The range “{item}” runs backwards"), &[("item", item)]);
+        }
+    }
+    if let Some((pages, rest)) = m.split_once(" pages × ")
+        && let Some((copies, rest)) = rest.split_once(" copies is more than the ")
+        && let Some((max, _)) = rest.split_once(" pages")
+    {
+        return fmt(
+            tl!("Too many pages for one print job: {pages} pages × {copies} copies (at most {max})"),
+            &[("pages", pages), ("copies", copies), ("max", max)],
+        );
+    }
+    m.to_string()
+}
+
+#[cfg(test)]
+mod print_error_tests {
+    use super::print_params_error;
+
+    #[test]
+    fn page_range_errors_have_their_own_text() {
+        for spec in ["", "7", "0", "x", "-", "5-2", "1-3, 9"] {
+            let Err(m) = wordcraft_engine::print::parse_page_range(spec, 3) else { continue };
+            let shown = print_params_error(&m);
+            assert!(!shown.contains("bad parameters"), "{shown}");
+            assert_ne!(shown, m, "{spec}: the engine's wording is shown as is");
+        }
+        assert_eq!(print_params_error("page 9 doesn't exist; the document has 3 pages"), "Page 9 doesn't exist: the document has 3 pages");
+        assert_eq!(print_params_error("page 2 doesn't exist; the document has 1 page"), "Page 2 doesn't exist: the document has 1 page");
     }
 }

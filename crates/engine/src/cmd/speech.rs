@@ -26,7 +26,7 @@ pub fn specs() -> Vec<CommandSpec> {
             .params(r#"{"value"?: bool}"#)
             .pure(),
         CommandSpec::new("readAloud.status", "Read Aloud Status", "Review › Speech", status).pure(),
-        CommandSpec::new("caret.pastCitation", "Move Past Citation", "Zotero › Citations", past_citation).pure(),
+        CommandSpec::new("caret.pastCitation", "Move Past Citation", "References › Citations", past_citation).pure(),
     ]
 }
 
@@ -172,7 +172,7 @@ mod tests {
     }
 
     /// "Cats purr (Smith 2020). Dogs bark (Jones 2021; Lee 2019).\nReferences\nSmith J. Cats.\nJones K. Dogs."
-    /// with Zotero citations and a Zotero bibliography over the last two paragraphs.
+    /// with CSL citations and a CSL bibliography over the last two paragraphs.
     fn doc() -> Document {
         let mut d = Document::from_text("Cats purr . Dogs bark .\nReferences\nSmith J. Cats.\nJones K. Dogs.");
         cite(&mut d, 0, 22, "(Jones 2021; Lee 2019)");

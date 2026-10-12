@@ -1,5 +1,5 @@
 //! Range fields: a [`InlineObject::FieldStart`] … [`InlineObject::FieldEnd`] pair whose result is
-//! the ordinary content between the two markers, possibly spanning paragraphs (a Zotero
+//! the ordinary content between the two markers, possibly spanning paragraphs (a citation-manager
 //! bibliography). Pairs nest like brackets and never cross a block list: a pair opened in a
 //! table cell closes in that cell.
 //!

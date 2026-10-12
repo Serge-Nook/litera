@@ -4,7 +4,7 @@
 //!
 //! Two kinds of field are handled: a simple field ([`InlineObject::Field`], one object whose result
 //! is cached text) and a range field ([`InlineObject::FieldStart`] … [`InlineObject::FieldEnd`],
-//! whose result is the ordinary content between the markers, e.g. a Zotero citation). Showing the
+//! whose result is the ordinary content between the markers, e.g. a citation-manager citation). Showing the
 //! code instead of the result applies to simple fields; range fields keep showing their result.
 
 use serde_json::{Value, json};

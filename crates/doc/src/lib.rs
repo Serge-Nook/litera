@@ -387,7 +387,7 @@ pub struct Source {
 }
 
 /// A custom document property (File › Info › Properties › Custom). Citation managers keep
-/// their per-document preferences here (Zotero: `ZOTERO_PREF_1`, `ZOTERO_PREF_2`…).
+/// their per-document preferences here (`ZOTERO_PREF_1`, `ZOTERO_PREF_2`… written by other editors).
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(default, rename_all = "camelCase")]
 pub struct CustomProp {

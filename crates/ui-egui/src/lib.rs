@@ -74,7 +74,6 @@ pub mod theme;
 pub mod widgets;
 pub mod window_geometry;
 pub mod wordart_menus;
-pub mod zotero;
 
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -405,8 +404,6 @@ pub struct WordApp {
     pub(crate) smart_art_typing: Option<usize>,
     /// The tab shown before Outline view brought up the Outlining tab (restored when it closes).
     pub(crate) outline_prev_tab: Option<String>,
-    /// Zotero commands in flight (`ui.zotero.*`).
-    pub zotero: zotero::ZoteroLink,
     /// The egui context, once the first frame has run (background work wakes the UI with it).
     pub(crate) ctx: Option<egui::Context>,
     /// Read Aloud: the start of the sentence the caret was last moved to, and the last error shown.
@@ -492,7 +489,6 @@ impl WordApp {
             smart_art_item: None,
             smart_art_typing: None,
             outline_prev_tab: None,
-            zotero: zotero::ZoteroLink::default(),
             ctx: None,
             read_aloud_at: None,
             read_aloud_error: None,
@@ -642,13 +638,6 @@ impl WordApp {
             return self.set_autosave(&params);
         }
         if let Some(r) = table_pen::toggle(self, id, &params) {
-            return r;
-        }
-        let ctx = self.ctx.clone();
-        if let Some(r) = zotero::command(self, id, &params, ctx.as_ref()) {
-            if let Err(e) = &r {
-                self.status(e.clone());
-            }
             return r;
         }
         // Web: saving and exporting become downloads.
@@ -1348,7 +1337,6 @@ impl WordApp {
             self.ctx = Some(ctx.clone());
         }
         self.drain_control(ctx);
-        zotero::poll(self, ctx);
         read_aloud::poll(self, ctx);
         self.clear_stale_change_picture();
         let _ = self.poll_file_dialog();
@@ -1516,7 +1504,6 @@ impl WordApp {
         #[cfg(not(target_arch = "wasm32"))]
         file_browser::show(self, &ctx);
         colors::show(self, &ctx);
-        zotero::show_alert(self, &ctx);
         read_aloud::show(self, &ctx);
         crate::keytips::show(self, &ctx, ui);
         keys::global_shortcuts(self, &ctx);

@@ -854,7 +854,6 @@ preview	Title	Пример
 	Direction:	Направление:
 	Right-to-left	Справа налево
 	Left-to-right	Слева направо
-	Zotero	Zotero
 	Citations	Ссылки на источники
 	Document	Документ
 	Add/Edit\nCitation	Добавить/изменить\nссылку
@@ -863,9 +862,6 @@ preview	Title	Пример
 	Refresh	Обновить
 	Document\nPreferences	Параметры\nдокумента
 	Unlink\nCitations	Отвязать\nссылки
-	Waiting for Zotero…	Ожидание Zotero…
-	Zotero: done	Zotero: готово
-	Zotero: cancelled	Zotero: отменено
 	Yes	Да
 	No	Нет
 	Move Past Citation	Перейти к концу ссылки
@@ -880,7 +876,6 @@ preview	Title	Пример
 	Skip Citations and Bibliography	Пропускать ссылки и список литературы
 	Skip citations & bibliography	Пропускать ссылки и список литературы
 	Stop Reading	Остановить чтение
-	Don't read Zotero, Mendeley or EndNote citations and bibliographies	Не читать ссылки и списки литературы Zotero, Mendeley и EndNote
 	Play	Воспроизвести
 	Pause	Пауза
 	Stop	Стоп
@@ -2487,3 +2482,13 @@ preview	Title	Пример
 	there is no ink to replay	нет рукописного ввода для воспроизведения
 	there's no citation after the caret	после курсора нет ссылки на источник
 	this item is already at the top level	этот элемент уже на верхнем уровне
+	The page range is too long	Слишком длинный диапазон страниц
+	The document has no pages	В документе нет страниц
+	Type the pages to print, like 1-3, 5	Укажите страницы для печати, например 1-3, 5
+	No pages to print with these settings	При этих настройках печатать нечего
+	Page {n} doesn't exist: the document has 1 page	Страницы {n} нет: в документе 1 страница
+	Page {n} doesn't exist: the document has {total} pages	Страницы {n} нет: всего страниц в документе — {total}
+	“{item}” isn't a page or a range like 2-4	«{item}» — не номер страницы и не диапазон вида 2-4
+	The range “{item}” runs backwards	Диапазон «{item}» указан в обратном порядке
+	Too many pages for one print job: {pages} pages × {copies} copies (at most {max})	Слишком много страниц для одного задания печати: {pages} стр. × {copies} копий (не более {max})
+	Don't read citations and bibliographies from citation managers	Не читать ссылки и списки литературы из менеджеров библиографии

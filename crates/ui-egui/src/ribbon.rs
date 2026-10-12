@@ -9,7 +9,7 @@ use crate::theme::{Tokens, medium, regular, semibold};
 use crate::widgets::{CONTENT_H, LABEL_H, big, big_toggle, combo, font_combo, group, menu_button, small, split};
 use crate::{WordApp, icons};
 
-pub const TABS: [&str; 13] = wordcraft_engine::ribbon::TABS;
+pub const TABS: [&str; 12] = wordcraft_engine::ribbon::TABS;
 
 /// True when the caret/selection touches a picture (#147).
 pub fn has_picture_selected(s: &wordcraft_engine::Session) -> bool {
@@ -296,7 +296,6 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
                         "Review" => review(app, ui),
                         "View" => view(app, ui),
                         "Developer" => developer(app, ui),
-                        "Zotero" => zotero(app, ui),
                         "Help" => help(app, ui),
                         "Table Design" => table_design(app, ui),
                         "Table Layout" => table_layout(app, ui),
@@ -410,8 +409,13 @@ fn mi_text(ui: &mut Ui, app: &mut WordApp, text: &str, id: &str, params: Value) 
 }
 
 /// The proofing languages the Language menu offers: tag and English name (translated when drawn).
-pub(crate) const PROOFING_LANGUAGES: [(&str, &str); 4] =
-    [("en-US", "English (United States)"), ("en-GB", "English (United Kingdom)"), ("pl-PL", "Polish"), ("pt-BR", "Portuguese (Brazil)")];
+pub(crate) const PROOFING_LANGUAGES: [(&str, &str); 5] = [
+    ("ru-RU", "Russian"),
+    ("en-US", "English (United States)"),
+    ("en-GB", "English (United Kingdom)"),
+    ("pl-PL", "Polish"),
+    ("pt-BR", "Portuguese (Brazil)"),
+];
 
 /// The English name of a proofing language tag, as the status bar shows it (no tag: WordCraft's
 /// default, US English; a tag without a name here: the tag).
@@ -423,6 +427,7 @@ pub(crate) fn language_name(tag: Option<&str>) -> String {
     match wordcraft_engine::proof::ProofLang::from_tag(Some(tag)) {
         wordcraft_engine::proof::ProofLang::Pl => "Polish".into(),
         wordcraft_engine::proof::ProofLang::Pt => "Portuguese (Brazil)".into(),
+        wordcraft_engine::proof::ProofLang::Ru => "Russian".into(),
         wordcraft_engine::proof::ProofLang::En if tag.eq_ignore_ascii_case("en") => "English (United States)".into(),
         _ => tag.to_string(),
     }
@@ -1466,23 +1471,6 @@ fn mailings(app: &mut WordApp, ui: &mut Ui) {
     });
     group(ui, "Finish", None, app, |ui, app| {
         big(ui, app, "finish", "Finish &\nMerge", "mailings.finish", json!({}), false);
-    });
-}
-
-/// Zotero (`docs/zotero.md`): the Zotero desktop app does the work in its own window.
-fn zotero(app: &mut WordApp, ui: &mut Ui) {
-    group(ui, "Citations", None, app, |ui, app| {
-        big(ui, app, "citation", "Add/Edit\nCitation", "ui.zotero.addEditCitation", json!({}), false);
-        big(ui, app, "addNote", "Add\nNote", "ui.zotero.addNote", json!({}), false);
-        big(ui, app, "pastCitation", "Move Past\nCitation", "caret.pastCitation", json!({}), false);
-    });
-    group(ui, "Bibliography", None, app, |ui, app| {
-        big(ui, app, "bibliography", "Add/Edit\nBibliography", "ui.zotero.addEditBibliography", json!({}), false);
-    });
-    group(ui, "Document", None, app, |ui, app| {
-        big(ui, app, "update", "Refresh", "ui.zotero.refresh", json!({}), false);
-        big(ui, app, "docPrefs", "Document\nPreferences", "ui.zotero.setDocPrefs", json!({}), false);
-        big(ui, app, "unlinkCitations", "Unlink\nCitations", "ui.zotero.removeCodes", json!({}), false);
     });
 }
 

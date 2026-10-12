@@ -33,6 +33,7 @@ overrides:
       - libxkbcommon0
       - libvulkan1 | libegl1
     recommends:
+      - espeak-ng
       - libwayland-client0
       - libx11-6
       - libx11-xcb1

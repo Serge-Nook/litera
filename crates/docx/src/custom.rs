@@ -1,5 +1,5 @@
 //! Custom document properties (`docProps/custom.xml`, ECMA-376 Part 1 §22.3). Citation
-//! managers keep their document preferences here (Zotero: `ZOTERO_PREF_1`…), so they must
+//! managers keep their document preferences here (`ZOTERO_PREF_1`, `Mendeley …`), so they must
 //! survive a round trip intact.
 
 use wordcraft_doc::CustomProp;

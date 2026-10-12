@@ -28,7 +28,7 @@ const MAX_TABLE_DEPTH: usize = 24;
 const MAX_FIELD_DEPTH: usize = 32;
 /// Deepest text-box-in-text-box nesting.
 const MAX_STORY_DEPTH: usize = 4;
-/// Longest field code we keep (Zotero's citation codes embed item data as JSON).
+/// Longest field code we keep (citation-manager codes embed item data as JSON).
 const MAX_INSTR: usize = 2 * 1024 * 1024;
 
 /// Inherited run context (from `w:hyperlink`, `w:ins`, `w:del` wrappers).

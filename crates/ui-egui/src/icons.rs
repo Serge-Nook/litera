@@ -760,7 +760,6 @@ pub fn paint(p: &Painter, r: Rect, name: &str, c: Color32, accent: Color32) {
             pen.line_c(&[(12.5, 12.5), (17.0, 17.0)], a);
             pen.lines(6.5, 11.5, &[8.0, 10.0]);
         }
-        // Zotero
         "docPrefs" => {
             pen.page(3.0, 2.5, 13.0, 17.5);
             pen.lines(5.0, 10.0, &[7.5, 10.0]);
