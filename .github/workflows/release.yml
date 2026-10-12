@@ -1,0 +1,65 @@
+name: Release
+
+# Pushing a tag vX.Y.Z builds the three installers and publishes them as a GitHub release.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tools
+        run: |
+          mkdir -p "$HOME/tools"
+          curl -fsSL https://github.com/goreleaser/nfpm/releases/download/v2.43.0/nfpm_2.43.0_Linux_x86_64.tar.gz | tar -xz -C "$HOME/tools" nfpm
+          curl -fsSL -o "$HOME/tools/appimagetool" https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x "$HOME/tools/appimagetool"
+      - name: Build .deb and .AppImage (Debian 10)
+        run: |
+          docker build -t litera-buster -f packaging/linux/Dockerfile.buster packaging/linux
+          docker run --rm -v "$PWD:/src" -v "$HOME/tools:/tools" -e CARGO_TARGET_DIR=/src/target -e APPIMAGETOOL=/tools/appimagetool -w /src litera-buster \
+            bash -c 'export PATH=/tools:$PATH; git config --global --add safe.directory /src; packaging/linux/package.sh --formats "appimage deb"'
+          sudo chown -R "$(id -u):$(id -g)" dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: dist/release/*
+
+  windows:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mingw-w64 nsis
+          rustup toolchain install 1.97.1 --profile minimal --target x86_64-pc-windows-gnu
+          rustup default 1.97.1
+      - name: Build Windows 10/11 installer
+        run: packaging/windows/package-nsis.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: dist/release/*.exe
+
+  publish:
+    needs: [linux, windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+      - name: Checksums
+        run: cd out && sha256sum * > SHA256SUMS
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: Литера ${{ github.ref_name }}
+          prerelease: true
+          files: out/*

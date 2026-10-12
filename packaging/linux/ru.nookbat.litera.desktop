@@ -1,0 +1,20 @@
+[Desktop Entry]
+Type=Application
+Name=Литера
+Name[ru]=Литера
+Name[zh_CN]=Литера
+GenericName=Word Processor
+GenericName[ru]=Текстовый редактор
+GenericName[zh_CN]=文字处理
+Comment=Create and edit documents
+Comment[ru]=Создание и редактирование документов
+Comment[zh_CN]=创建和编辑文档
+Exec=litera %F
+TryExec=litera
+Icon=ru.nookbat.litera
+Terminal=false
+StartupNotify=true
+StartupWMClass=ru.nookbat.litera
+Categories=Office;WordProcessor;
+Keywords=word;processor;document;docx;writer;text;документ;текст;литера;
+MimeType=application/vnd.openxmlformats-officedocument.wordprocessingml.document;application/vnd.ms-word.document.macroEnabled.12;application/vnd.openxmlformats-officedocument.wordprocessingml.template;application/vnd.ms-word.template.macroEnabled.12;application/msword;application/msword-template;application/vnd.oasis.opendocument.text;application/rtf;text/rtf;text/markdown;text/x-tex;text/html;text/plain;
