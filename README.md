@@ -1,3 +1,30 @@
-# Литера
+<h1 align="center">Литера</h1>
 
-Бесплатная программа для создания и редактирования документов. Сайт автора: https://nookbat.ru
+<p align="center"><b>Бесплатная программа для создания и редактирования документов.</b></p>
+
+<p align="center">Версия 0.0.1 (прототип) · Сайт автора: <a href="https://nookbat.ru">nookbat.ru</a></p>
+
+## Установка
+
+| Система | Пакет |
+|---|---|
+| Debian, Astra Linux | `litera-<версия>-linux-x86_64.deb` — `sudo apt install ./litera-*.deb` |
+| SteamOS | `litera-<версия>-linux-x86_64.AppImage` — сделайте файл исполняемым и запустите: появится меню «Установить/Обновить», «Удалить», «Выход» |
+| Windows 10/11 (x64) | `litera-<версия>-windows-x64-setup.exe` |
+
+Установленная из AppImage программа лежит в `~/.local/share/litera` и появляется в меню приложений.
+«Удалить» убирает её полностью, какая бы версия ни была установлена.
+
+## Языки интерфейса
+
+Русский (по умолчанию), английский и китайский: Файл › Параметры › Язык интерфейса.
+
+## Сборка
+
+```sh
+cargo run --release -p wordcraft            # запуск
+packaging/linux/package.sh --formats "appimage deb"
+packaging/windows/package-nsis.sh           # кросс-сборка .exe-установщика (mingw-w64 + nsis)
+```
+
+Литера основана на открытом проекте WordCraft (MIT OR Apache-2.0).
